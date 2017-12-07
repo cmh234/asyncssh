@@ -16,15 +16,18 @@
 # private key in it to use as a server host key. An SSH host certificate
 # can optionally be provided in the file ``ssh_host_key-cert.pub``.
 
-import asyncio, asyncssh, crypt, sys
+import asyncio, asyncssh, sys, time
 
 passwords = {'guest': '',                 # guest account with no password
-             'user123': 'qV2iEadIGV2rw'   # password of 'secretpw'
+             'user123': 'test'   # password of 'secretpw'
             }
 
 def handle_client(process):
     process.stdout.write('Welcome to my SSH server, %s!\n' %
                          process.channel.get_extra_info('username'))
+    process.stdout.write('Put code here to do something until then I quit, %s!\n' %
+                         process.channel.get_extra_info('username'))
+
     process.exit(0)
 
 class MySSHServer(asyncssh.SSHServer):
@@ -47,12 +50,22 @@ class MySSHServer(asyncssh.SSHServer):
 
     def validate_password(self, username, password):
         pw = passwords.get(username, '*')
-        return crypt.crypt(password, pw) == pw
+        #return crypt.crypt(password, pw) == pw
+        #return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()) == pw
+        return password == pw
+
+
 
 async def start_server():
+    port = 8022
+    ip = '0.0.0.0'
+    ssh_host_key = 'flask_app/asyncssh/keys/mysshkey'
     await asyncssh.create_server(MySSHServer, '', 8022,
-                                 server_host_keys=['ssh_host_key'],
+                                 server_host_keys=[ssh_host_key],
                                  process_factory=handle_client)
+    print(time.strftime("%Y-%m-%d %H:%M"))
+    print("Server started at: {0}:{1}".format(ip, port))
+
 
 loop = asyncio.get_event_loop()
 
